@@ -1,5 +1,5 @@
 # prelegal
 
-a repo for legal draft
+A repo for legal draft.
 
-claude setting
+**Status:** This project is currently in progress and is expected to be completed by 2026-05-01.
