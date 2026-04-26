@@ -98,8 +98,9 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generation failed");
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
       setDocument(data.document);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong");
