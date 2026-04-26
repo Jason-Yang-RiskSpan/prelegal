@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import jsPDF from "jspdf";
 
 interface FormData {
   party1Name: string;
@@ -108,13 +109,12 @@ export default function Home() {
   };
 
   const download = () => {
-    const blob = new Blob([document], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = window.document.createElement("a");
-    a.href = url;
-    a.download = "Mutual-NDA.md";
-    a.click();
-    URL.revokeObjectURL(url);
+    const doc = new jsPDF();
+    doc.setFont("helvetica");
+    doc.setFontSize(10);
+    const lines = doc.splitTextToSize(document, 180);
+    doc.text(lines, 15, 15);
+    doc.save("Mutual-NDA.pdf");
   };
 
   return (
@@ -183,7 +183,7 @@ export default function Home() {
                   onClick={download}
                   className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded transition-colors cursor-pointer"
                 >
-                  Download .md
+                  Download PDF
                 </button>
               </div>
               <pre className="bg-white border rounded p-6 text-sm text-gray-800 whitespace-pre-wrap font-mono leading-relaxed">
