@@ -1,5 +1,41 @@
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
+
+.nda-doc h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+.nda-doc h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.nda-doc h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1rem 0 0.25rem 0;
+}
+.nda-doc p { margin: 0.5rem 0; }
+.nda-doc ul, .nda-doc ol { margin: 0.5rem 0; padding-left: 1.25rem; }
+.nda-doc li { margin: 0.25rem 0; }
+.nda-doc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+.nda-doc th, .nda-doc td {
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.nda-doc th { background: #f3f4f6; font-weight: 600; }
+.nda-doc hr { border: 0; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
+.nda-doc em { color: #6b7280; font-style: italic; }
+.nda-doc a { color: #2563eb; text-decoration: underline; }
 
 :root {
   --background: #ffffff;

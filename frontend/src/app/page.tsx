@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { marked } from "marked";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -22,8 +22,6 @@ interface FormData {
   jurisdiction: string;
   modifications: string;
 }
-
-import { useState } from "react";
 
 const defaultForm: FormData = {
   party1Name: "Jane Smith",
@@ -172,18 +170,59 @@ export default function Home() {
 
   const download = async () => {
     if (!previewRef.current) return;
-    const canvas = await html2canvas(previewRef.current, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ unit: "px", format: "a4" });
+    const pdf = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const imgH = (canvas.height * pageW) / canvas.width;
-    let y = 0;
-    while (y < imgH) {
-      if (y > 0) pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, -y, pageW, imgH);
-      y += pageH;
+    const margin = 40;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2;
+
+    let cursorY = margin;
+    const children = Array.from(previewRef.current.children) as HTMLElement[];
+
+    for (const el of children) {
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: "#ffffff" });
+      const blockH = (canvas.height * usableW) / canvas.width;
+
+      // If the block fits on one page and would overflow the current page, start a new page.
+      if (blockH <= usableH && cursorY + blockH > pageH - margin) {
+        pdf.addPage();
+        cursorY = margin;
+      }
+
+      // If the block is taller than a full page, slice it across pages.
+      if (blockH > usableH) {
+        const pageImgH = usableH;
+        const ratio = canvas.width / usableW;
+        let sourceY = 0;
+        while (sourceY < canvas.height) {
+          if (cursorY > margin) {
+            pdf.addPage();
+            cursorY = margin;
+          }
+          const sliceSrcH = Math.min(pageImgH * ratio, canvas.height - sourceY);
+          const slice = document.createElement("canvas");
+          slice.width = canvas.width;
+          slice.height = sliceSrcH;
+          const ctx = slice.getContext("2d");
+          if (ctx) {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, slice.width, slice.height);
+            ctx.drawImage(canvas, 0, -sourceY);
+          }
+          const sliceH = (sliceSrcH / ratio);
+          pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, cursorY, usableW, sliceH);
+          sourceY += sliceSrcH;
+          cursorY = pageH; // force new page on next iteration
+        }
+        cursorY = pageH;
+        continue;
+      }
+
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, cursorY, usableW, blockH);
+      cursorY += blockH + 8;
     }
+
     pdf.save("Mutual-NDA.pdf");
   };
 
@@ -248,7 +287,7 @@ export default function Home() {
             </div>
             <div
               ref={previewRef}
-              className="bg-white border rounded p-8 text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none"
+              className="nda-doc bg-white border rounded p-10 text-sm text-gray-800 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           </div>
