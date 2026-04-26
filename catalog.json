@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Mutual NDA Cover Page",
+    "description": "Fillable cover page for the Common Paper Mutual NDA. Contains fields for purpose, effective date, MNDA term, term of confidentiality, governing law, jurisdiction, modifications, and party signatures.",
+    "filename": "template/Mutual-NDA-coverpage.md"
+  },
+  {
+    "name": "Mutual NDA Standard Terms",
+    "description": "Standard terms for the Common Paper Mutual Non-Disclosure Agreement Version 1.0, covering confidential information definitions, use and protection obligations, exceptions, required disclosures, term, termination, return of information, proprietary rights, disclaimer, governing law, equitable relief, and general provisions.",
+    "filename": "template/Mutual-NDA.md"
+  },
+  {
+    "name": "Mutual NDA README",
+    "description": "Overview and FAQ for the Common Paper Mutual NDA: how the agreement was created, versioning policy, usage instructions, and license information.",
+    "filename": "template/README.md"
+  }
+]
