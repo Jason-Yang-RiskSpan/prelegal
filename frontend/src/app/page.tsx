@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 
 interface FormData {
@@ -22,20 +22,20 @@ interface FormData {
 }
 
 const defaultForm: FormData = {
-  party1Name: "",
-  party1Title: "",
-  party1Company: "",
-  party1Address: "",
-  party2Name: "",
-  party2Title: "",
-  party2Company: "",
-  party2Address: "",
+  party1Name: "Jane Smith",
+  party1Title: "CEO",
+  party1Company: "Acme Corp",
+  party1Address: "jane@acme.com",
+  party2Name: "John Doe",
+  party2Title: "CTO",
+  party2Company: "Globex Inc",
+  party2Address: "john@globex.com",
   purpose: "Evaluating whether to enter into a business relationship with the other party.",
   effectiveDate: new Date().toISOString().split("T")[0],
   mndaTerm: "1",
   confidentialityTerm: "1",
-  governingLaw: "",
-  jurisdiction: "",
+  governingLaw: "Delaware",
+  jurisdiction: "courts located in Wilmington, DE",
   modifications: "",
 };
 
@@ -107,6 +107,9 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { generate(); }, []);
 
   const download = () => {
     const doc = new jsPDF();
