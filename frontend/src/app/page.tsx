@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { marked } from "marked";
+import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 interface FormData {
@@ -82,9 +84,10 @@ function Field({
 
 export default function Home() {
   const [form, setForm] = useState<FormData>(defaultForm);
-  const [document, setDocument] = useState<string>("");
+  const [markdown, setMarkdown] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const update = (name: keyof FormData, value: string) =>
     setForm((f) => ({ ...f, [name]: value }));
@@ -101,7 +104,7 @@ export default function Home() {
       const text = await res.text();
       const data = text ? JSON.parse(text) : {};
       if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-      setDocument(data.document);
+      setMarkdown(data.document);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -112,21 +115,31 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { generate(); }, []);
 
-  const download = () => {
-    const doc = new jsPDF();
-    doc.setFont("helvetica");
-    doc.setFontSize(10);
-    const lines = doc.splitTextToSize(document, 180);
-    doc.text(lines, 15, 15);
-    doc.save("Mutual-NDA.pdf");
+  const download = async () => {
+    if (!previewRef.current) return;
+    const canvas = await html2canvas(previewRef.current, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ unit: "px", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgH = (canvas.height * pageW) / canvas.width;
+    let y = 0;
+    while (y < imgH) {
+      if (y > 0) pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, -y, pageW, imgH);
+      y += pageH;
+    }
+    pdf.save("Mutual-NDA.pdf");
   };
+
+  const html = marked(markdown) as string;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b px-6 py-4">
         <h1 className="text-xl font-semibold text-gray-800">Mutual NDA Creator</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Fill in the key details and let AI complete your Mutual Non-Disclosure Agreement.
+          Fill in the key details to generate your Mutual Non-Disclosure Agreement.
         </p>
       </header>
 
@@ -179,7 +192,7 @@ export default function Home() {
 
         {/* Preview panel */}
         <main className="flex-1 overflow-y-auto p-6">
-          {document ? (
+          {markdown ? (
             <div className="max-w-3xl mx-auto">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Preview</h2>
@@ -190,9 +203,11 @@ export default function Home() {
                   Download PDF
                 </button>
               </div>
-              <pre className="bg-white border rounded p-6 text-sm text-gray-800 whitespace-pre-wrap font-mono leading-relaxed">
-                {document}
-              </pre>
+              <div
+                ref={previewRef}
+                className="bg-white border rounded p-8 text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-gray-400 text-sm">
