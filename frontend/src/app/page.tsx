@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { marked } from "marked";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -23,6 +23,8 @@ interface FormData {
   modifications: string;
 }
 
+import { useState } from "react";
+
 const defaultForm: FormData = {
   party1Name: "Jane Smith",
   party1Title: "CEO",
@@ -40,6 +42,54 @@ const defaultForm: FormData = {
   jurisdiction: "courts located in Wilmington, DE",
   modifications: "",
 };
+
+function buildMarkdown(f: FormData): string {
+  return `# Mutual Non-Disclosure Agreement
+
+## USING THIS MUTUAL NON-DISCLOSURE AGREEMENT
+
+This Mutual Non-Disclosure Agreement (the "MNDA") consists of: (1) this Cover Page ("**Cover Page**") and (2) the Common Paper Mutual NDA Standard Terms Version 1.0 ("**Standard Terms**") identical to those posted at [commonpaper.com/standards/mutual-nda/1.0](https://commonpaper.com/standards/mutual-nda/1.0). Any modifications of the Standard Terms should be made on the Cover Page, which will control over conflicts with the Standard Terms.
+
+### Purpose
+*How Confidential Information may be used*
+
+${f.purpose}
+
+### Effective Date
+${f.effectiveDate}
+
+### MNDA Term
+*The length of this MNDA*
+- [x] Expires ${f.mndaTerm} year(s) from Effective Date.
+- [ ] Continues until terminated in accordance with the terms of the MNDA.
+
+### Term of Confidentiality
+*How long Confidential Information is protected*
+- [x] ${f.confidentialityTerm} year(s) from Effective Date, but in the case of trade secrets until Confidential Information is no longer considered a trade secret under applicable laws.
+- [ ] In perpetuity.
+
+### Governing Law & Jurisdiction
+**Governing Law:** ${f.governingLaw}
+
+**Jurisdiction:** ${f.jurisdiction}
+
+### MNDA Modifications
+${f.modifications || "None"}
+
+By signing this Cover Page, each party agrees to enter into this MNDA as of the Effective Date.
+
+| | PARTY 1 | PARTY 2 |
+|:---|:---:|:---:|
+| **Print Name** | ${f.party1Name} | ${f.party2Name} |
+| **Title** | ${f.party1Title} | ${f.party2Title} |
+| **Company** | ${f.party1Company} | ${f.party2Company} |
+| **Notice Address** | ${f.party1Address} | ${f.party2Address} |
+| **Date** | ${f.effectiveDate} | ${f.effectiveDate} |
+| **Signature** | | |
+
+---
+*Common Paper Mutual Non-Disclosure Agreement (Version 1.0) free to use under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).*`;
+}
 
 function Field({
   label,
@@ -84,36 +134,13 @@ function Field({
 
 export default function Home() {
   const [form, setForm] = useState<FormData>(defaultForm);
-  const [markdown, setMarkdown] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const previewRef = useRef<HTMLDivElement>(null);
 
   const update = (name: keyof FormData, value: string) =>
     setForm((f) => ({ ...f, [name]: value }));
 
-  const generate = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-      if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-      setMarkdown(data.document);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { generate(); }, []);
+  const markdown = useMemo(() => buildMarkdown(form), [form]);
+  const html = useMemo(() => marked(markdown) as string, [markdown]);
 
   const download = async () => {
     if (!previewRef.current) return;
@@ -132,14 +159,12 @@ export default function Home() {
     pdf.save("Mutual-NDA.pdf");
   };
 
-  const html = marked(markdown) as string;
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b px-6 py-4">
         <h1 className="text-xl font-semibold text-gray-800">Mutual NDA Creator</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Fill in the key details to generate your Mutual Non-Disclosure Agreement.
+          Edit the fields on the left — the agreement updates live on the right.
         </p>
       </header>
 
@@ -179,41 +204,26 @@ export default function Home() {
             </div>
           </section>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
           <button
-            onClick={generate}
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2.5 rounded text-sm transition-colors cursor-pointer"
+            onClick={download}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded text-sm transition-colors cursor-pointer"
           >
-            {loading ? "Generating..." : "Generate NDA"}
+            Download PDF
           </button>
         </aside>
 
         {/* Preview panel */}
         <main className="flex-1 overflow-y-auto p-6">
-          {markdown ? (
-            <div className="max-w-3xl mx-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Preview</h2>
-                <button
-                  onClick={download}
-                  className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded transition-colors cursor-pointer"
-                >
-                  Download PDF
-                </button>
-              </div>
-              <div
-                ref={previewRef}
-                className="bg-white border rounded p-8 text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
+          <div className="max-w-3xl mx-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Preview</h2>
             </div>
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-              Fill in the form and click Generate NDA to see the preview here.
-            </div>
-          )}
+            <div
+              ref={previewRef}
+              className="bg-white border rounded p-8 text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>
         </main>
       </div>
     </div>
