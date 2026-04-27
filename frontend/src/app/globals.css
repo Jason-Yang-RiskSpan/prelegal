@@ -23,15 +23,20 @@
 .nda-doc li { margin: 0.25rem 0; }
 .nda-doc table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #d1d5db;
   margin: 1rem 0;
 }
 .nda-doc th, .nda-doc td {
-  border: 1px solid #d1d5db;
+  border-bottom: 1px solid #d1d5db;
+  border-right: 1px solid #d1d5db;
   padding: 0.5rem 0.75rem;
   text-align: left;
   vertical-align: top;
 }
+.nda-doc th:first-child, .nda-doc td:first-child { border-left: none; }
+.nda-doc tr:last-child th, .nda-doc tr:last-child td { border-bottom: none; }
 .nda-doc th { background: #f3f4f6; font-weight: 600; }
 .nda-doc hr { border: 0; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
 .nda-doc em { color: #6b7280; font-style: italic; }
