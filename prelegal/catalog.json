@@ -1,0 +1,117 @@
+[
+  {
+    "name": "Mutual NDA Cover Page",
+    "description": "Fillable cover page for the Common Paper Mutual NDA. Contains fields for purpose, effective date, MNDA term, confidentiality period, governing law, jurisdiction, modifications, and party signatures.",
+    "filename": "template/Mutual-NDA/Mutual-NDA-coverpage.md"
+  },
+  {
+    "name": "Mutual NDA Standard Terms",
+    "description": "Standard terms for the Common Paper Mutual Non-Disclosure Agreement, covering confidential information definitions, use and protection obligations, exceptions, required disclosures, term, termination, return of information, proprietary rights, disclaimer, governing law, and equitable relief.",
+    "filename": "template/Mutual-NDA/Mutual-NDA.md"
+  },
+  {
+    "name": "Mutual NDA README",
+    "description": "Overview and FAQ for the Common Paper Mutual NDA: creation process, versioning policy, usage instructions, and license information.",
+    "filename": "template/Mutual-NDA/README.md"
+  },
+  {
+    "name": "Cloud Service Agreement (CSA)",
+    "description": "Standard terms for the Common Paper Cloud Service Agreement, governing the provision and use of cloud-based software services between vendors and customers.",
+    "filename": "template/CSA/CSA.md"
+  },
+  {
+    "name": "Cloud Service Agreement README",
+    "description": "Overview and FAQ for the Common Paper Cloud Service Agreement.",
+    "filename": "template/CSA/README.md"
+  },
+  {
+    "name": "Service Level Agreement (SLA)",
+    "description": "Standard terms for the Common Paper Service Level Agreement, defining service availability commitments, measurement methods, and remedies for service failures.",
+    "filename": "template/SLA/sla.md"
+  },
+  {
+    "name": "Service Level Agreement README",
+    "description": "Overview and FAQ for the Common Paper Service Level Agreement.",
+    "filename": "template/SLA/README.md"
+  },
+  {
+    "name": "Data Processing Agreement (DPA)",
+    "description": "Standard terms for the Common Paper Data Processing Agreement, covering personal data handling obligations, processor requirements, subprocessors, security measures, and data subject rights.",
+    "filename": "template/DPA/DPA.md"
+  },
+  {
+    "name": "Data Processing Agreement README",
+    "description": "Overview and FAQ for the Common Paper Data Processing Agreement.",
+    "filename": "template/DPA/README.md"
+  },
+  {
+    "name": "Design Partner Agreement",
+    "description": "Standard agreement for design partnerships, governing early-access product testing arrangements between vendors and design partners in exchange for feedback.",
+    "filename": "template/Design-Partner-Agreement/design-partner-agreement.md"
+  },
+  {
+    "name": "Design Partner Agreement README",
+    "description": "Overview and FAQ for the Common Paper Design Partner Agreement.",
+    "filename": "template/Design-Partner-Agreement/README.md"
+  },
+  {
+    "name": "Professional Services Agreement (PSA)",
+    "description": "Standard terms for the Common Paper Professional Services Agreement, governing the delivery of professional or consulting services including statements of work, fees, intellectual property, and warranties.",
+    "filename": "template/PSA/psa.md"
+  },
+  {
+    "name": "Professional Services Agreement README",
+    "description": "Overview and FAQ for the Common Paper Professional Services Agreement.",
+    "filename": "template/PSA/README.md"
+  },
+  {
+    "name": "Partnership Agreement",
+    "description": "Standard terms for the Common Paper Partnership Agreement, governing business partnership arrangements including roles, revenue sharing, intellectual property, and term.",
+    "filename": "template/Partnership-Agreement/Partnership-Agreement.md"
+  },
+  {
+    "name": "Partnership Agreement README",
+    "description": "Overview and FAQ for the Common Paper Partnership Agreement.",
+    "filename": "template/Partnership-Agreement/README.md"
+  },
+  {
+    "name": "Business Associate Agreement (BAA)",
+    "description": "Standard terms for the Common Paper Business Associate Agreement, governing the handling of protected health information (PHI) under HIPAA between covered entities and business associates.",
+    "filename": "template/BAA/BAA.md"
+  },
+  {
+    "name": "Business Associate Agreement README",
+    "description": "Overview and FAQ for the Common Paper Business Associate Agreement.",
+    "filename": "template/BAA/README.md"
+  },
+  {
+    "name": "Software License Agreement",
+    "description": "Standard terms for the Common Paper Software License Agreement, governing the licensing of software to end users including scope of license, restrictions, fees, and warranties.",
+    "filename": "template/Software-License-Agreement/Software-License-Agreement.md"
+  },
+  {
+    "name": "Software License Agreement README",
+    "description": "Overview and FAQ for the Common Paper Software License Agreement.",
+    "filename": "template/Software-License-Agreement/README.md"
+  },
+  {
+    "name": "Pilot Agreement",
+    "description": "Standard terms for the Common Paper Pilot Agreement, governing short-term trial or evaluation arrangements that allow prospective customers to test a product or service before committing to a full commercial contract.",
+    "filename": "template/Pilot-Agreement/Pilot-Agreement.md"
+  },
+  {
+    "name": "Pilot Agreement README",
+    "description": "Overview and FAQ for the Common Paper Pilot Agreement.",
+    "filename": "template/Pilot-Agreement/README.md"
+  },
+  {
+    "name": "AI Addendum",
+    "description": "Standard addendum for AI-specific provisions, covering data use, model training restrictions, output ownership, and AI-related liability to supplement existing agreements.",
+    "filename": "template/AI-Addendum/AI-Addendum.md"
+  },
+  {
+    "name": "AI Addendum README",
+    "description": "Overview and FAQ for the Common Paper AI Addendum.",
+    "filename": "template/AI-Addendum/README.md"
+  }
+]
