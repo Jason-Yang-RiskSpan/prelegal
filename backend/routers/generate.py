@@ -8,7 +8,7 @@ router = APIRouter()
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "cerebras/gpt-oss-120b"
+MODEL = "openai/gpt-oss-120b"
 
 
 class GenerateRequest(BaseModel):

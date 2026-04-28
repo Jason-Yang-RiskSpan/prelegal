@@ -4,60 +4,80 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { marked } from 'marked';
 import { NdaFormData, EMPTY_FORM } from '@/lib/types';
+
+const FORM_KEYS = new Set(Object.keys(EMPTY_FORM) as (keyof NdaFormData)[]);
 import { buildMarkdown } from '@/lib/buildMarkdown';
 import { storage } from '@/lib/storage';
 
-function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      {children}
-    </div>
-  );
-}
+const INITIAL_MESSAGE = "Hi! I'll help you create a Mutual NDA. Let's start — what are the names and companies of both parties?";
 
-const INPUT = 'w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500';
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export default function AppClient() {
   const [form, setForm] = useState<NdaFormData>(EMPTY_FORM);
-  const [generating, setGenerating] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([
+    { role: 'assistant', content: INITIAL_MESSAGE },
+  ]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
   const [exporting, setExporting] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     if (!storage.get('token')) router.push('/login');
   }, [router]);
 
-  const set = (field: keyof NdaFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm(f => ({ ...f, [field]: e.target.value }));
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const markdown = useMemo(() => buildMarkdown(form), [form]);
   const previewHtml = useMemo(() => marked(markdown) as string, [markdown]);
 
-  const handleGenerate = async () => {
+  const handleSend = async () => {
+    if (!input.trim() || sending) return;
     const token = storage.get('token');
-    setGenerating(true);
+    const userMsg: Message = { role: 'user', content: input.trim() };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setInput('');
+    setSending(true);
     try {
-      const res = await fetch('/api/generate', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ messages: newMessages, form }),
       });
       const data = await res.json();
       if (res.ok) {
-        setForm(f => ({
-          ...f,
-          purpose: data.purpose ?? f.purpose,
-          effectiveDate: data.effectiveDate ?? f.effectiveDate,
-          mndaTermYears: data.mndaTermYears ?? f.mndaTermYears,
-          termOfConfidentialityYears: data.termOfConfidentialityYears ?? f.termOfConfidentialityYears,
-          governingLaw: data.governingLaw ?? f.governingLaw,
-          jurisdiction: data.jurisdiction ?? f.jurisdiction,
-        }));
+        if (data.reply) {
+          setMessages(m => [...m, { role: 'assistant', content: data.reply }]);
+        }
+        if (data.fields && typeof data.fields === 'object') {
+          const safe = Object.fromEntries(
+            Object.entries(data.fields as Record<string, string>).filter(([k]) => FORM_KEYS.has(k as keyof NdaFormData))
+          ) as Partial<NdaFormData>;
+          setForm(f => ({ ...f, ...safe }));
+        }
+      } else {
+        setMessages(m => [...m, { role: 'assistant', content: 'Something went wrong. Please try again.' }]);
       }
-    } catch { /* backend not ready */ } finally {
-      setGenerating(false);
+    } catch {
+      setMessages(m => [...m, { role: 'assistant', content: 'Something went wrong. Please try again.' }]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
@@ -98,13 +118,6 @@ export default function AppClient() {
         <span className="font-semibold text-gray-900">prelegal</span>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {generating ? 'Generating…' : 'Generate'}
-          </button>
-          <button
             onClick={handleDownloadPdf}
             disabled={exporting}
             className="px-4 py-1.5 bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -118,54 +131,52 @@ export default function AppClient() {
       </header>
 
       <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 53px)' }}>
-        {/* Form panel */}
-        <aside className="w-80 bg-white border-r border-gray-200 overflow-y-auto shrink-0 p-5 space-y-5">
-          <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Party 1</h3>
-            <div className="space-y-2.5">
-              <Field label="Name" id="p1name"><input id="p1name" className={INPUT} value={form.party1Name} onChange={set('party1Name')} placeholder="Jane Smith" /></Field>
-              <Field label="Title" id="p1title"><input id="p1title" className={INPUT} value={form.party1Title} onChange={set('party1Title')} placeholder="CEO" /></Field>
-              <Field label="Company" id="p1co"><input id="p1co" className={INPUT} value={form.party1Company} onChange={set('party1Company')} placeholder="Acme Corp" /></Field>
-              <Field label="Email" id="p1email"><input id="p1email" type="email" className={INPUT} value={form.party1Email} onChange={set('party1Email')} placeholder="jane@acme.com" /></Field>
+        {/* Chat panel */}
+        <aside className="w-80 bg-white border-r border-gray-200 flex flex-col shrink-0">
+          <div className="px-4 py-3 border-b border-gray-100 shrink-0">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Mutual NDA</span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-3 py-2 rounded-lg text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {sending && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 text-gray-400 px-3 py-2 rounded-lg text-sm">
+                  Thinking…
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          <div className="border-t border-gray-200 p-3 shrink-0">
+            <div className="flex gap-2 items-end">
+              <textarea
+                className="flex-1 px-2.5 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 resize-none"
+                rows={2}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message… (Enter to send)"
+                disabled={sending}
+              />
+              <button
+                onClick={handleSend}
+                disabled={sending || !input.trim()}
+                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send
+              </button>
             </div>
-          </section>
-
-          <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Party 2</h3>
-            <div className="space-y-2.5">
-              <Field label="Name" id="p2name"><input id="p2name" className={INPUT} value={form.party2Name} onChange={set('party2Name')} placeholder="John Doe" /></Field>
-              <Field label="Title" id="p2title"><input id="p2title" className={INPUT} value={form.party2Title} onChange={set('party2Title')} placeholder="CTO" /></Field>
-              <Field label="Company" id="p2co"><input id="p2co" className={INPUT} value={form.party2Company} onChange={set('party2Company')} placeholder="Beta Ltd" /></Field>
-              <Field label="Email" id="p2email"><input id="p2email" type="email" className={INPUT} value={form.party2Email} onChange={set('party2Email')} placeholder="john@beta.com" /></Field>
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Agreement</h3>
-            <div className="space-y-2.5">
-              <Field label="Purpose" id="purpose">
-                <textarea id="purpose" className={`${INPUT} resize-none`} rows={3} value={form.purpose} onChange={set('purpose')} placeholder="Evaluating a potential business relationship…" />
-              </Field>
-              <Field label="Effective Date" id="date">
-                <input id="date" type="date" className={INPUT} value={form.effectiveDate} onChange={set('effectiveDate')} />
-              </Field>
-              <Field label="MNDA Term (years)" id="term">
-                <input id="term" type="number" min="1" className={INPUT} value={form.mndaTermYears} onChange={set('mndaTermYears')} />
-              </Field>
-              <Field label="Confidentiality Term (years)" id="conf">
-                <input id="conf" type="number" min="1" className={INPUT} value={form.termOfConfidentialityYears} onChange={set('termOfConfidentialityYears')} />
-              </Field>
-              <Field label="Governing Law (state)" id="law">
-                <input id="law" className={INPUT} value={form.governingLaw} onChange={set('governingLaw')} placeholder="California" />
-              </Field>
-              <Field label="Jurisdiction" id="juris">
-                <input id="juris" className={INPUT} value={form.jurisdiction} onChange={set('jurisdiction')} placeholder="San Francisco, CA" />
-              </Field>
-              <Field label="Modifications (optional)" id="mods">
-                <textarea id="mods" className={`${INPUT} resize-none`} rows={2} value={form.modifications} onChange={set('modifications')} placeholder="Any changes to standard terms…" />
-              </Field>
-            </div>
-          </section>
+          </div>
         </aside>
 
         {/* Preview panel */}
