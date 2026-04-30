@@ -30,7 +30,8 @@
       "Bash(python3 -c *)",
       "Bash(npx tsc *)",
       "Bash(curl -s -o /dev/null -w \"Backend health: %{http_code}\\\\n\" http://localhost:8000/docs)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(claude mcp *)"
     ]
   }
 }
