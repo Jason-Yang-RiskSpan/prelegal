@@ -4,7 +4,7 @@
 
 **prelegal** is an AI-powered legal document generator. Users fill out a form with party details and agreement terms; the app generates a formatted, downloadable Mutual NDA PDF with a live preview.
 
-- Templates are sourced from [Common Paper](https://github.com/commonpaper) (CC BY 4.0) and cataloged in @catalog.json.
+- Templates are sourced from [Common Paper](https://github.com/commonpaper) (CC BY 4.0), vendored in `prelegal/`, and cataloged in `catalog.json`.
 - The app has a Next.js frontend and a Python FastAPI backend, both containerized via Docker.
 - The backend owns auth (sign up / sign in) and LLM calls. The frontend owns the document form, live preview, and PDF export.
 - Currently supports Mutual NDA. The catalog contains 11 agreement types for future expansion.
@@ -12,7 +12,7 @@
 ## 2. Development Process
 
 **General rules:**
-- Be simple. Work in small, incremental steps. Validate each step before moving on.
+- Be simple. Work in small, incremental steps. AskUserQuestion for each step before moving on.
 - Do not overengineer. Do not program defensively. No exception handlers unless genuinely needed.
 - Name things clearly. Favor short modules, short methods, and short functions.
 - No emojis in code or print statements. Keep README.md concise.
@@ -84,9 +84,10 @@ CREATE TABLE IF NOT EXISTS users (
 | `backend/routers/generate.py` | `/generate` endpoint — calls Cerebras via OpenRouter |
 | `catalog.json` | Index of all 11 agreement types and their template file paths |
 | `template/` | Raw legal markdown templates organized by agreement type |
+| `prelegal/` | Vendored Common Paper template source (CC BY 4.0) |
 
 **Architecture rules:**
-- The SQLite file lives inside the backend container. It is ephemeral by default; mount a volume in Docker Compose to persist it across restarts.
+- The SQLite file lives inside the backend container. It is ephemeral by default; mount a volume in Docker Compose to persist it across restarts. The `data/` directory at the repo root serves as the local host-side mount point and is gitignored.
 - Document generation is markdown-first: generate markdown, render to HTML for preview, export to PDF.
 - Client-side: form state, live preview re-render via `useMemo`, PDF export.
 - All LLM calls and auth logic live in the FastAPI backend. The Next.js API route is a thin proxy only.

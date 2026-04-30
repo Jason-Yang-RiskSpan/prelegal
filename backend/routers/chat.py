@@ -2,14 +2,16 @@ import json
 import os
 import httpx
 from typing import Literal
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from routers.auth import current_user_id
 
 router = APIRouter()
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "openai/gpt-oss-120b"
+PROVIDER = {"order": ["cerebras"], "allow_fallbacks": False}
 
 VALID_FIELDS = {
     "party1Name", "party1Title", "party1Company", "party1Email",
@@ -47,7 +49,7 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, _user_id: int = Depends(current_user_id)):
     if not OPENROUTER_API_KEY:
         raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY not configured")
 
@@ -69,6 +71,7 @@ async def chat(req: ChatRequest):
             },
             json={
                 "model": MODEL,
+                "provider": PROVIDER,
                 "messages": messages,
                 "response_format": {"type": "json_object"},
             },
