@@ -3,13 +3,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { marked } from 'marked';
-import { NdaFormData, EMPTY_FORM } from '@/lib/types';
-
-const FORM_KEYS = new Set(Object.keys(EMPTY_FORM) as (keyof NdaFormData)[]);
-import { buildMarkdown } from '@/lib/buildMarkdown';
+import { FormData } from '@/lib/types';
+import { buildDocument } from '@/lib/buildDocument';
 import { storage } from '@/lib/storage';
 
-const INITIAL_MESSAGE = "Hi! I'll help you create a Mutual NDA. Let's start — what are the names and companies of both parties?";
+const INITIAL_MESSAGE =
+  "Hi! What kind of legal document do you need? I can generate a Mutual NDA, Cloud Service Agreement, or Professional Services Agreement. Tell me what you're trying to do and I'll guide you through it.";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -17,7 +16,9 @@ interface Message {
 }
 
 export default function AppClient() {
-  const [form, setForm] = useState<NdaFormData>(EMPTY_FORM);
+  const [form, setForm] = useState<FormData>({});
+  const [templateId, setTemplateId] = useState<string | null>(null);
+  const [standardTerms, setStandardTerms] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: INITIAL_MESSAGE },
   ]);
@@ -36,8 +37,25 @@ export default function AppClient() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const markdown = useMemo(() => buildMarkdown(form), [form]);
-  const previewHtml = useMemo(() => marked(markdown) as string, [markdown]);
+  useEffect(() => {
+    if (!templateId) {
+      setStandardTerms('');
+      return;
+    }
+    const token = storage.get('token');
+    fetch(`/api/templates/${encodeURIComponent(templateId)}/standard-terms`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => (res.ok ? res.text() : ''))
+      .then(setStandardTerms)
+      .catch(() => setStandardTerms(''));
+  }, [templateId]);
+
+  const markdown = useMemo(
+    () => buildDocument(templateId, form, standardTerms),
+    [templateId, form, standardTerms]
+  );
+  const previewHtml = useMemo(() => (markdown ? (marked(markdown) as string) : ''), [markdown]);
 
   const handleSend = async () => {
     if (!input.trim() || sending) return;
@@ -51,18 +69,19 @@ export default function AppClient() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages: newMessages, form }),
+        body: JSON.stringify({ messages: newMessages, templateId, form }),
       });
       const data = await res.json();
       if (res.ok) {
         if (data.reply) {
           setMessages(m => [...m, { role: 'assistant', content: data.reply }]);
         }
+        if (data.templateId && data.templateId !== templateId) {
+          setTemplateId(data.templateId);
+          setForm({});
+        }
         if (data.fields && typeof data.fields === 'object') {
-          const safe = Object.fromEntries(
-            Object.entries(data.fields as Record<string, string>).filter(([k]) => FORM_KEYS.has(k as keyof NdaFormData))
-          ) as Partial<NdaFormData>;
-          setForm(f => ({ ...f, ...safe }));
+          setForm(f => ({ ...f, ...(data.fields as FormData) }));
         }
       } else {
         setMessages(m => [...m, { role: 'assistant', content: 'Something went wrong. Please try again.' }]);
@@ -82,7 +101,7 @@ export default function AppClient() {
   };
 
   const handleDownloadPdf = async () => {
-    if (!previewRef.current) return;
+    if (!previewRef.current || !markdown) return;
     setExporting(true);
     try {
       const { default: html2canvas } = await import('html2canvas');
@@ -101,7 +120,7 @@ export default function AppClient() {
         pos += pageH;
         if (remaining > 0) pdf.addPage();
       }
-      pdf.save('mutual-nda.pdf');
+      pdf.save(`${templateId || 'document'}.pdf`);
     } finally {
       setExporting(false);
     }
@@ -112,14 +131,19 @@ export default function AppClient() {
     router.push('/login');
   };
 
+  const headerLabel = templateId
+    ? { 'mutual-nda': 'Mutual NDA', csa: 'Cloud Service Agreement', psa: 'Professional Services Agreement' }[templateId] ??
+      templateId
+    : 'Choose a template';
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen overflow-hidden bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
         <span className="font-semibold text-gray-900">prelegal</span>
         <div className="flex items-center gap-3">
           <button
             onClick={handleDownloadPdf}
-            disabled={exporting}
+            disabled={exporting || !markdown}
             className="px-4 py-1.5 bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {exporting ? 'Exporting…' : 'Download PDF'}
@@ -130,29 +154,26 @@ export default function AppClient() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 53px)' }}>
-        {/* Chat panel */}
-        <aside className="w-80 bg-white border-r border-gray-200 flex flex-col shrink-0">
+      <div className="flex flex-1 min-h-0">
+        <aside className="w-80 bg-white border-r border-gray-200 flex flex-col shrink-0 min-h-0">
           <div className="px-4 py-3 border-b border-gray-100 shrink-0">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Mutual NDA</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{headerLabel}</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-lg text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
+                <div
+                  className={`max-w-[85%] px-3 py-2 rounded-lg text-sm leading-relaxed whitespace-pre-wrap ${
+                    msg.role === 'user' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
                   {msg.content}
                 </div>
               </div>
             ))}
             {sending && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-400 px-3 py-2 rounded-lg text-sm">
-                  Thinking…
-                </div>
+                <div className="bg-gray-100 text-gray-400 px-3 py-2 rounded-lg text-sm">Thinking…</div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -179,13 +200,18 @@ export default function AppClient() {
           </div>
         </aside>
 
-        {/* Preview panel */}
-        <main className="flex-1 overflow-y-auto bg-white">
-          <div
-            ref={previewRef}
-            className="max-w-3xl mx-auto px-10 py-10 prose prose-sm prose-gray"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
-          />
+        <main className="flex-1 overflow-y-auto bg-white min-h-0">
+          {previewHtml ? (
+            <div
+              ref={previewRef}
+              className="max-w-3xl mx-auto px-10 py-10 prose prose-sm prose-gray"
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+              Your document preview will appear here.
+            </div>
+          )}
         </main>
       </div>
     </div>
