@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const auth = req.headers.get('Authorization') ?? '';
 
-  const res = await fetch(`${BACKEND_URL}/generate`, {
+  const res = await fetch(`${BACKEND_URL}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: auth },
     body: JSON.stringify(body),
