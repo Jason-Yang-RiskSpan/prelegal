@@ -22,7 +22,15 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git rm *)",
+      "Bash(rm -rf prelegal/.git)",
+      "Bash(curl -s -X POST http://localhost:8000/chat *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c *)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s -o /dev/null -w \"Backend health: %{http_code}\\\\n\" http://localhost:8000/docs)",
+      "Bash(curl *)"
     ]
   }
 }

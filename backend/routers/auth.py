@@ -1,7 +1,8 @@
 import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 import bcrypt
 import jwt
@@ -12,6 +13,16 @@ router = APIRouter()
 _SECRET = os.environ.get("JWT_SECRET", "dev-secret-change-me")
 _ALGORITHM = "HS256"
 _TOKEN_TTL_HOURS = 24
+
+_bearer = HTTPBearer(auto_error=True)
+
+
+def current_user_id(creds: HTTPAuthorizationCredentials = Depends(_bearer)) -> int:
+    try:
+        payload = jwt.decode(creds.credentials, _SECRET, algorithms=[_ALGORITHM])
+        return int(payload["sub"])
+    except (jwt.PyJWTError, KeyError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
 class Credentials(BaseModel):
